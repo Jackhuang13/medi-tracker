@@ -1,0 +1,7 @@
+{
+  "name": "MediTracker-常備藥物智慧管理助手",
+  "description": "智慧常備藥物管理與用藥指引 PWA，精準推算餘藥用罄日期、週末休診預警、拍照建檔、庫存件數單量換算與每日服藥打卡。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

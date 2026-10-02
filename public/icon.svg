@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="50%" stop-color="#0d9488" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="pillGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="pillGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#042f2e" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Outer subtle circular glow -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#ffffff" stroke-width="6" stroke-opacity="0.15" stroke-dasharray="8 8" />
+
+  <g filter="url(#shadow)">
+    <!-- Main Medicine Pill angled at 45 deg -->
+    <g transform="translate(256, 256) rotate(-45) translate(-140, -70)">
+      <!-- Left Pill Half -->
+      <path d="M 70,0 A 70,70 0 0,0 70,140 L 140,140 L 140,0 Z" fill="url(#pillGrad1)" />
+      <!-- Right Pill Half -->
+      <path d="M 140,0 L 210,0 A 70,70 0 0,1 210,140 L 140,140 Z" fill="url(#pillGrad2)" />
+      <!-- Middle divider line -->
+      <line x1="140" y1="0" x2="140" y2="140" stroke="#0f172a" stroke-width="4" stroke-opacity="0.15" />
+      <!-- Pill Highlight shine -->
+      <path d="M 45,35 Q 70,20 120,20" stroke="#ffffff" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.6" />
+      <!-- Cross symbol inside left half -->
+      <path d="M 70,50 L 70,90 M 50,70 L 90,70" stroke="#ffffff" stroke-width="10" stroke-linecap="round" />
+    </g>
+
+    <!-- Medical Plus Badge at bottom right -->
+    <g transform="translate(330, 310)">
+      <circle cx="45" cy="45" r="45" fill="#10b981" />
+      <circle cx="45" cy="45" r="40" fill="#059669" />
+      <!-- Clock Hand Icon representing Schedule & Dosage Prediction -->
+      <circle cx="45" cy="45" r="28" fill="none" stroke="#ffffff" stroke-width="5" />
+      <polyline points="45,28 45,45 57,45" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+
+    <!-- Sparkle / Smart Indicator Badge at top right -->
+    <path d="M 370,110 Q 370,140 395,140 Q 370,140 370,170 Q 370,140 345,140 Q 370,140 370,110 Z" fill="#fbbf24" opacity="0.9" />
+  </g>
+</svg>

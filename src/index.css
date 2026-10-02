@@ -1,0 +1,85 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Iansui&display=swap');
+
+@layer base {
+  :root {
+    --font-iansui: 'Iansui', -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    font-family: var(--font-iansui);
+  }
+
+  body {
+    overscroll-behavior-y: none;
+    font-family: var(--font-iansui);
+    background-color: #f0f7ff;
+    color: #1e293b;
+    /* Shinkai style soft twilight sky aura background */
+    background-image: 
+      radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.18), transparent 35%),
+      radial-gradient(circle at 85% 20%, rgba(244, 114, 182, 0.15), transparent 40%),
+      radial-gradient(circle at 50% 80%, rgba(251, 191, 36, 0.12), transparent 45%),
+      linear-gradient(180deg, #e0f2fe 0%, #f0fdfa 40%, #fff1f2 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+}
+
+/* Makoto Shinkai aesthetic helper classes */
+.shinkai-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 30px -5px rgba(14, 165, 233, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+.shinkai-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(224, 242, 254, 0.9);
+  box-shadow: 0 8px 24px -4px rgba(56, 189, 248, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+}
+
+.shinkai-sky-gradient {
+  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #f472b6 100%);
+}
+
+.shinkai-twilight-gradient {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+}
+
+.shinkai-sunset-gradient {
+  background: linear-gradient(135deg, #f97316 0%, #fbbf24 60%, #38bdf8 100%);
+}
+
+@keyframes gentle-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+
+.animate-float {
+  animation: gentle-float 4s ease-in-out infinite;
+}
+
+.animate-twinkle {
+  animation: twinkle 2.5s ease-in-out infinite;
+}
