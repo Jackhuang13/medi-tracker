@@ -176,7 +176,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen pb-16 font-sans">
+    <div className="min-h-screen pb-16">
       {/* 離線提示與 PWA 更新提示 */}
       <OfflineIndicator />
       <ReloadPrompt />

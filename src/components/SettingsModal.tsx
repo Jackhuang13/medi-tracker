@@ -13,9 +13,13 @@ import {
   HardDrive,
   Info,
   ChevronRight,
+  Type,
+  Maximize2,
+  CheckCircle2,
+  Zap,
 } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
-import { Language } from '../i18n/types';
+import { usePreferences, FONT_OPTIONS, FontSizeOption, FontFamilyOption } from '../context/PreferencesContext';
 import { Medication } from '../types/medication';
 
 interface SettingsModalProps {
@@ -38,6 +42,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onResetToSampleData,
 }) => {
   const { language, setLanguage, languages, t } = useLanguage();
+  const { fontSize, setFontSize, fontFamily, setFontFamily, currentFontDef } = usePreferences();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -65,9 +70,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const fontSizes: Array<{ id: FontSizeOption; labelKey: 'fontSizeNormal' | 'fontSizeLarge' | 'fontSizeExtraLarge'; desc: string }> = [
+    { id: 'normal', labelKey: 'fontSizeNormal', desc: '預設標準字級 (適合多數螢幕)' },
+    { id: 'large', labelKey: 'fontSizeLarge', desc: '放大 110% (提升閱讀舒適度)' },
+    { id: 'extra-large', labelKey: 'fontSizeExtraLarge', desc: '放大 120% (適合長輩清晰易視)' },
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-sky-950/40 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl border-2 border-sky-100 overflow-hidden">
+      <div className="relative w-full max-w-xl max-h-[92vh] flex flex-col rounded-3xl bg-white shadow-2xl border-2 border-sky-100 overflow-hidden">
         {/* 標頭 */}
         <div className="flex items-center justify-between px-5 py-4 border-b-2 border-sky-100 bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50 shrink-0">
           <div className="flex items-center gap-2.5">
@@ -95,10 +106,128 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* 內容區塊 */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 text-slate-800">
-          {/* 1. 語系切換區塊 */}
+          {/* 1. 字體挑選 (Font Family) */}
+          <div className="p-4 rounded-3xl bg-gradient-to-br from-teal-50/70 via-sky-50/50 to-blue-50/40 border-2 border-sky-200/80 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-teal-500 text-white flex items-center justify-center shrink-0">
+                  <Type className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    {t('fontFamilySectionTitle')}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {t('fontFamilySectionDesc')}
+                  </p>
+                </div>
+              </div>
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800 border border-teal-200 shrink-0">
+                <Zap className="w-3 h-3 text-teal-600" />
+                {t('fontCacheBadge')}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 pt-1">
+              {FONT_OPTIONS.map((font) => {
+                const isSelected = fontFamily === font.id;
+                return (
+                  <button
+                    key={font.id}
+                    type="button"
+                    onClick={() => setFontFamily(font.id)}
+                    className={`flex items-center justify-between p-3 rounded-2xl border-2 transition-all cursor-pointer active:scale-98 text-left ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-teal-500 to-sky-600 text-white border-teal-400 font-black shadow-md shadow-teal-200'
+                        : 'bg-white hover:bg-sky-50/80 border-sky-100 text-slate-700'
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="text-sm font-black"
+                          style={{ fontFamily: font.fontFamilyCSS }}
+                        >
+                          {font.name}
+                        </span>
+                        <span
+                          className={`text-[10px] px-2 py-0.2 rounded-full font-bold ${
+                            isSelected
+                              ? 'bg-white/25 text-white border border-white/40'
+                              : 'bg-sky-50 text-sky-700 border border-sky-200'
+                          }`}
+                        >
+                          {font.badge}
+                        </span>
+                      </div>
+                      <p
+                        className={`text-xs ${
+                          isSelected ? 'text-teal-100' : 'text-slate-500'
+                        }`}
+                        style={{ fontFamily: font.fontFamilyCSS }}
+                      >
+                        {font.previewText}
+                      </p>
+                    </div>
+                    {isSelected && (
+                      <CheckCircle2 className="w-5 h-5 text-white shrink-0 ml-2" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. 字型大小設定 (Font Size) */}
+          <div className="p-4 rounded-3xl bg-gradient-to-br from-amber-50/70 via-orange-50/40 to-yellow-50/30 border-2 border-amber-200/80 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                <Maximize2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-900">
+                  {t('fontSizeSectionTitle')}
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  {t('fontSizeSectionDesc')}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              {fontSizes.map((fs) => {
+                const isSelected = fontSize === fs.id;
+                return (
+                  <button
+                    key={fs.id}
+                    type="button"
+                    onClick={() => setFontSize(fs.id)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all cursor-pointer active:scale-95 text-center ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400 font-black shadow-md shadow-amber-200'
+                        : 'bg-white hover:bg-amber-50/80 border-amber-100 text-slate-700 font-bold'
+                    }`}
+                  >
+                    <span className="text-sm">
+                      {t(fs.labelKey)}
+                    </span>
+                    <span
+                      className={`text-[10px] mt-1 ${
+                        isSelected ? 'text-amber-100' : 'text-slate-400'
+                      }`}
+                    >
+                      {fs.id === 'normal' ? '16px' : fs.id === 'large' ? '17.5px' : '19px'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 3. 語系切換區塊 */}
           <div className="p-4 rounded-3xl bg-gradient-to-br from-sky-50/60 to-blue-50/40 border-2 border-sky-100 space-y-3">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-sky-500 text-white flex items-center justify-center">
+              <div className="w-7 h-7 rounded-xl bg-sky-500 text-white flex items-center justify-center shrink-0">
                 <Globe className="w-4 h-4" />
               </div>
               <div>
@@ -136,10 +265,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* 2. 資料備份與還原管理 */}
+          {/* 4. 資料備份與還原管理 */}
           <div className="p-4 rounded-3xl bg-gradient-to-br from-indigo-50/60 to-purple-50/40 border-2 border-indigo-100 space-y-3">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-indigo-500 text-white flex items-center justify-center">
+              <div className="w-7 h-7 rounded-xl bg-indigo-500 text-white flex items-center justify-center shrink-0">
                 <Database className="w-4 h-4" />
               </div>
               <div>
@@ -209,7 +338,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* 3. 資料重置危險區 */}
+          {/* 5. 資料重置危險區 */}
           <div className="p-4 rounded-3xl bg-slate-50 border-2 border-slate-200 space-y-2.5">
             <div className="flex items-center justify-between">
               <div>
@@ -235,7 +364,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowResetConfirm(false)}
-                    className="px-2.5 py-1 rounded-xl border border-slate-300 text-slate-600 text-xs font-bold hover:bg-white"
+                    className="px-2.5 py-1 rounded-xl border border-slate-300 text-slate-600 text-xs font-bold hover:bg-white cursor-pointer"
                   >
                     {t('cancel')}
                   </button>
@@ -246,7 +375,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       onResetToSampleData();
                       setImportStatus({ type: 'success', message: '已成功重置為範本資料！' });
                     }}
-                    className="px-3 py-1 rounded-xl bg-rose-600 text-white text-xs font-black shadow-xs hover:bg-rose-700"
+                    className="px-3 py-1 rounded-xl bg-rose-600 text-white text-xs font-black shadow-xs hover:bg-rose-700 cursor-pointer"
                   >
                     確認重置
                   </button>
@@ -255,11 +384,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* 4. 關於資訊 */}
+          {/* 6. 關於資訊 */}
           <div className="p-3.5 rounded-2xl bg-sky-50/40 border border-sky-100 flex items-center justify-between text-xs text-slate-500 font-medium">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-sky-500" />
-              <span>MediTracker v1.0.0 (PWA)</span>
+              <span>MediTracker (字體：{currentFontDef.name})</span>
             </div>
             <span>目前已建檔 {medications.length} 款常備藥物</span>
           </div>

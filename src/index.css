@@ -1,31 +1,37 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Iansui&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Iansui&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;600;700;900&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap');
 
-@layer base {
-  :root {
-    --font-iansui: 'Iansui', -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-  }
+@theme {
+  --font-sans: var(--app-font-family, 'Iansui', 'PingFang TC', 'Microsoft JhengHei', sans-serif);
+}
 
-  html {
-    -webkit-tap-highlight-color: transparent;
-    scroll-behavior: smooth;
-    font-family: var(--font-iansui);
-  }
+:root {
+  --app-font-family: 'Iansui', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+}
 
-  body {
-    overscroll-behavior-y: none;
-    font-family: var(--font-iansui);
-    background-color: #f0f7ff;
-    color: #1e293b;
-    /* Shinkai style soft twilight sky aura background */
-    background-image: 
-      radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.18), transparent 35%),
-      radial-gradient(circle at 85% 20%, rgba(244, 114, 182, 0.15), transparent 40%),
-      radial-gradient(circle at 50% 80%, rgba(251, 191, 36, 0.12), transparent 45%),
-      linear-gradient(180deg, #e0f2fe 0%, #f0fdfa 40%, #fff1f2 100%);
-    background-attachment: fixed;
-    min-height: 100vh;
-  }
+html {
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+  font-family: var(--app-font-family);
+}
+
+body {
+  overscroll-behavior-y: none;
+  font-family: var(--app-font-family);
+  background-color: #f0f7ff;
+  color: #1e293b;
+  /* Shinkai style soft twilight sky aura background */
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.18), transparent 35%),
+    radial-gradient(circle at 85% 20%, rgba(244, 114, 182, 0.15), transparent 40%),
+    radial-gradient(circle at 50% 80%, rgba(251, 191, 36, 0.12), transparent 45%),
+    linear-gradient(180deg, #e0f2fe 0%, #f0fdfa 40%, #fff1f2 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+input, button, select, textarea {
+  font-family: inherit;
 }
 
 /* Makoto Shinkai aesthetic helper classes */
