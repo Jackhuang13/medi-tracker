@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Smartphone, Share, PlusSquare, X, Sparkles } from 'lucide-react';
+import { Download, Smartphone, Share, PlusSquare, X } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export const PWAInstallButton: React.FC = () => {
@@ -15,12 +15,12 @@ export const PWAInstallButton: React.FC = () => {
     return (
       <button
         onClick={install}
-        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-md shadow-pink-200 transition-all cursor-pointer"
+        className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 active:scale-95 text-white text-xs font-bold shadow-md shadow-pink-200 transition-all cursor-pointer shrink-0"
         title="安裝為桌面/手機 App 離線使用"
+        aria-label="安裝 App"
       >
-        <Download className="w-4 h-4 animate-bounce" />
-        <span className="hidden sm:inline">安裝 App ✨</span>
-        <span className="sm:hidden">安裝</span>
+        <Download className="w-4 h-4 animate-bounce shrink-0" />
+        <span className="hidden md:inline whitespace-nowrap">安裝 App</span>
       </button>
     );
   }
@@ -31,12 +31,12 @@ export const PWAInstallButton: React.FC = () => {
       <>
         <button
           onClick={() => setShowIOSGuide(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 active:scale-95 text-sky-900 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-2xs"
+          className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 active:scale-95 text-sky-900 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
           title="加入 iPhone/iPad 主畫面"
+          aria-label="加到主畫面"
         >
-          <Smartphone className="w-4 h-4 text-sky-600" />
-          <span className="hidden sm:inline">加到主畫面 ✨</span>
-          <span className="sm:hidden">加到桌面</span>
+          <Smartphone className="w-4 h-4 text-sky-600 shrink-0" />
+          <span className="hidden md:inline whitespace-nowrap">加到主畫面</span>
         </button>
 
         {showIOSGuide && (

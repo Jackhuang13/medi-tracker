@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Medication } from '../types/medication';
 import { calculateMedicationForecast, formatDate, getEffectiveDoseSlots } from '../utils/medicationMath';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface DashboardStatsProps {
   medications: Medication[];
@@ -26,6 +27,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
   onOpenWeekendSchedule,
   onFilterChange,
 }) => {
+  const { t } = useTranslation();
   const dateKey = formatDate(selectedDate);
 
   let totalActiveMedsCount = 0;
@@ -76,7 +78,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-sky-800 flex items-center gap-1">
             <Sun className="w-3.5 h-3.5 text-amber-500 animate-spin-slow" />
-            今日服藥元氣
+            {t('statAdherence')}
           </span>
           <div className="w-8 h-8 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center shadow-xs">
             <CheckCircle2 className="w-4 h-4" />
@@ -88,7 +90,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               {completionRate}%
             </span>
             <span className="text-xs font-bold text-sky-600">
-              {completedMedsCount}/{totalActiveMedsCount} 款藥物
+              {completedMedsCount}/{totalActiveMedsCount} {t('statMedsUnit')}
             </span>
           </div>
           {/* 糖果色彩進度條 */}
@@ -113,7 +115,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-amber-900 flex items-center gap-1">
             <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400 animate-twinkle" />
-            即期週末休診預警
+            {t('statWeekendAlert')}
           </span>
           <div
             className={`w-8 h-8 rounded-2xl flex items-center justify-center shadow-xs ${
@@ -132,17 +134,17 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
                 weekendMeds.length > 0 ? 'text-amber-900' : 'text-slate-800'
               }`}
             >
-              {weekendMeds.length} 項
+              {weekendMeds.length} {t('statItemsUnit')}
             </span>
             <span className="text-[11px] font-bold text-amber-700 flex items-center gap-0.5 bg-amber-100/80 px-2 py-0.5 rounded-full">
-              {weekendMeds.length > 0 ? '即期注意 ✨' : '安心無虞'}
+              {weekendMeds.length > 0 ? t('statNeedAttention') : t('statSafe')}
               <ChevronRight className="w-3 h-3" />
             </span>
           </div>
           <p className="text-[11px] text-amber-800/80 truncate mt-1">
             {weekendMeds.length > 0
-              ? `${weekendMeds[0].name.slice(0, 10)}...即期用罄`
-              : '近期無 14 天內週末用罄風險'}
+              ? `${weekendMeds[0].name.slice(0, 10)}...`
+              : t('statNoWeekendRisk')}
           </p>
         </div>
       </div>
@@ -159,7 +161,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-rose-800 flex items-center gap-1">
             <Flame className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-            庫存告急 (≤3天)
+            {t('statLowStock')}
           </span>
           <div
             className={`w-8 h-8 rounded-2xl flex items-center justify-center shadow-xs ${
@@ -178,14 +180,14 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
                 criticalMeds.length > 0 ? 'text-rose-900' : 'text-slate-800'
               }`}
             >
-              {criticalMeds.length} 款
+              {criticalMeds.length} {t('statMedsUnit')}
             </span>
             <span className="text-[11px] font-bold text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded-full">
-              {criticalMeds.length > 0 ? '即將見底' : '存量充足'}
+              {criticalMeds.length > 0 ? t('statAboutToExhaust') : t('statStockPlenty')}
             </span>
           </div>
           <p className="text-[11px] text-rose-800/80 truncate mt-1">
-            {criticalMeds.length > 0 ? '請記得補貨或回診' : '藥品庫存皆大於 3 天'}
+            {criticalMeds.length > 0 ? t('statLowStock') : t('statStockSafeDesc')}
           </p>
         </div>
       </div>
@@ -198,7 +200,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-indigo-800 flex items-center gap-1">
             <CloudSun className="w-3.5 h-3.5 text-indigo-500" />
-            全部使用中藥物
+            {t('statActiveMeds')}
           </span>
           <div className="w-8 h-8 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-xs">
             <Pill className="w-4 h-4" />
@@ -207,18 +209,16 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         <div className="mt-2.5">
           <div className="flex items-baseline justify-between">
             <span className="text-2xl sm:text-3xl font-black text-indigo-950">
-              {totalActiveMedsCount} 款
+              {totalActiveMedsCount} {t('statMedsUnit')}
             </span>
             <span className="text-xs font-bold text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-full">
-              {medications.length > totalActiveMedsCount
-                ? `共 ${medications.length} 款 (含未來)`
-                : '用心呵護'}
+              {t('statTakeCare')}
             </span>
           </div>
           <p className="text-[11px] text-indigo-700/80 truncate mt-1">
             {medications.length > totalActiveMedsCount
               ? `有 ${medications.length - totalActiveMedsCount} 款尚未到達開始日`
-              : '用心呵護每一天的健康'}
+              : t('appHeroBadge')}
           </p>
         </div>
       </div>

@@ -28,6 +28,7 @@ import {
 } from '../utils/medicationMath';
 import { CATEGORY_LABELS, ROUTE_LABELS, USAGE_SLOT_LABELS } from '../utils/labels';
 import { MedicationIcon } from './MedicationIcon';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface MedicationCardProps {
   medication: Medication;
@@ -50,6 +51,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
   onBatchCheck,
   onAdjustStock,
 }) => {
+  const { t } = useTranslation();
   const [showQuickAdjust, setShowQuickAdjust] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -219,7 +221,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                       className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-sky-50 hover:text-sky-700 text-left font-bold cursor-pointer transition"
                     >
                       <Info className="w-3.5 h-3.5 text-sky-600" />
-                      查看用藥詳情
+                      {t('viewDetail')}
                     </button>
                     <button
                       onClick={() => {
@@ -229,7 +231,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                       className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-amber-50 hover:text-amber-800 text-left font-bold cursor-pointer transition"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      微調庫存數量
+                      {t('quickAdjustStock', { unit: medication.packageSpec.unitName })}
                     </button>
                     <button
                       onClick={() => {
@@ -239,7 +241,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                       className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-left font-bold cursor-pointer transition"
                     >
                       <Edit2 className="w-3.5 h-3.5 text-blue-500" />
-                      編輯藥品資訊
+                      {t('editMedication')}
                     </button>
                     <div className="my-1 border-t border-slate-100" />
                     <button
@@ -250,7 +252,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                       className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-rose-50 text-rose-600 text-left font-bold cursor-pointer transition"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      刪除此藥品
+                      {t('deleteMedication')}
                     </button>
                   </div>
                 </>
@@ -500,10 +502,10 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
 
             <div className="text-center space-y-1.5">
               <h3 className="text-base font-black text-slate-900">
-                確認要刪除此藥品嗎？
+                {t('deleteConfirmTitle')}
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                即將刪除「<strong className="text-rose-600 font-black">{medication.name}</strong>」。刪除後相關之庫存、排程推算與歷史打卡紀錄將一併移除，無法復原。
+                {t('deleteConfirmDesc', { name: medication.name })}
               </p>
             </div>
 
@@ -513,7 +515,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                 onClick={() => setShowDeleteConfirm(false)}
                 className="w-full py-2.5 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 active:scale-95 transition cursor-pointer"
               >
-                取消
+                {t('cancel')}
               </button>
               <button
                 type="button"
@@ -523,7 +525,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                 }}
                 className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-black text-xs shadow-md shadow-rose-200 hover:from-rose-600 hover:to-red-700 active:scale-95 transition cursor-pointer"
               >
-                確認刪除
+                {t('confirmDelete')}
               </button>
             </div>
           </div>

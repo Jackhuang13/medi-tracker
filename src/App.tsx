@@ -1,49 +1,46 @@
-/**
- * MediTracker - 常備藥物智慧管理助手
- * 新海誠風格 (兒童可愛風) 主應用程式元件
- */
-
 import React, { useState, useMemo } from 'react';
 import {
   Pill,
   Plus,
   Calendar,
-  Search,
-  Download,
   AlertTriangle,
-  RotateCcw,
-  Sparkles,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Flame,
-  Cloud,
-  Sun,
-  Moon,
-  Star,
+  Search,
+  Download,
+  Upload,
+  Sparkles,
   Heart,
-  CloudSun,
+  ShieldCheck,
+  Sun,
+  Flame,
+  CalendarDays,
+  Cloud,
+  Star,
+  Settings,
 } from 'lucide-react';
+import { Medication, MedicationCategory } from './types/medication';
 import { useMedications } from './hooks/useMedications';
-import { Medication } from './types/medication';
 import {
-  formatDate,
   calculateMedicationForecast,
   diffDays,
+  formatDate,
 } from './utils/medicationMath';
 import { CATEGORY_LABELS } from './utils/labels';
-
 import { MedicationCard } from './components/MedicationCard';
 import { MedicationFormModal } from './components/MedicationFormModal';
 import { MedicationDetailModal } from './components/MedicationDetailModal';
 import { RefillScheduleModal } from './components/RefillScheduleModal';
 import { BackupModal } from './components/BackupModal';
+import { SettingsModal } from './components/SettingsModal';
 import { DashboardStats } from './components/DashboardStats';
 import { PWAInstallButton } from './components/PWAInstallButton';
-import { ReloadPrompt } from './components/ReloadPrompt';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { ReloadPrompt } from './components/ReloadPrompt';
+import { useTranslation } from './i18n/LanguageContext';
 
 export default function App() {
+  const { t } = useTranslation();
   const {
     medications,
     addMedication,
@@ -57,7 +54,7 @@ export default function App() {
     importDataFromJSON,
   } = useMedications();
 
-  // 日期狀態 (預設今日)
+  // 當前檢視日期 (預設為今日)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   // 篩選與搜尋
@@ -68,12 +65,11 @@ export default function App() {
   // Modal 狀態
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
-
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailedMedication, setDetailedMedication] = useState<Medication | null>(null);
-
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isRefillScheduleOpen, setIsRefillScheduleOpen] = useState(false);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // 日期導覽
   const handlePrevDay = () => {
@@ -185,57 +181,65 @@ export default function App() {
       <OfflineIndicator />
       <ReloadPrompt />
 
-      {/* 頂部導覽列 Header (新海誠天空玻璃質感) */}
-      <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-lg border-b-2 border-sky-100 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
+      {/* 頂部導覽列 Header (新海誠天空玻璃質感 - RWD 防破版排版) */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-lg border-b-2 border-sky-100 shadow-xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
           {/* Logo 與名稱 */}
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-3xl bg-gradient-to-tr from-sky-500 via-cyan-400 to-pink-400 text-white flex items-center justify-center shadow-md shadow-sky-300/40 animate-float">
-              <Pill className="w-6 h-6 rotate-45" />
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-sky-500 via-cyan-400 to-pink-400 text-white flex items-center justify-center shadow-md shadow-sky-300/40 animate-float shrink-0">
+              <Pill className="w-5 h-5 sm:w-6 sm:h-6 rotate-45" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-xl font-black tracking-tight bg-gradient-to-r from-sky-700 via-blue-600 to-pink-600 bg-clip-text text-transparent">
-                  MediTracker
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="text-base sm:text-xl font-black tracking-tight bg-gradient-to-r from-sky-700 via-blue-600 to-pink-600 bg-clip-text text-transparent truncate">
+                  {t('appName')}
                 </h1>
-                <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-100/80 text-sky-800 border border-sky-200">
+                <span className="hidden lg:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-100/80 text-sky-800 border border-sky-200 shrink-0">
                   <Sparkles className="w-3 h-3 text-amber-500 animate-twinkle" />
-                  常備藥物智慧小管家
+                  {t('appSubtitle')}
                 </span>
               </div>
-              <p className="text-xs text-sky-800/70 hidden sm:block">
-                晴空與星光守護・餘藥精準預測・週末休診預警 ✨
+              <p className="text-xs text-sky-800/70 hidden sm:block truncate">
+                {t('appHeroDesc')}
               </p>
             </div>
           </div>
 
-          {/* 右側操作按鈕 */}
-          <div className="flex items-center gap-2">
+          {/* 右側操作按鈕群組 (更換資料備份為「設置」分頁) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* 週末用罄預警按鈕 */}
             <button
               onClick={() => setIsRefillScheduleOpen(true)}
-              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border-2 text-xs font-bold transition cursor-pointer shadow-2xs active:scale-95 ${
+              className={`relative flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-2xl border-2 text-xs font-bold transition cursor-pointer shadow-2xs active:scale-95 shrink-0 ${
                 weekendWarningCount > 0
                   ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 text-amber-900 hover:bg-amber-100'
                   : 'bg-white border-sky-100 text-slate-700 hover:bg-sky-50'
               }`}
-              title="查看所有藥品預計用罄排程與週末休診預警"
+              title={
+                weekendWarningCount > 0
+                  ? `發現 ${weekendWarningCount} 項即期週末休診預警，點擊查看排程`
+                  : '查看藥品預計用罄排程與週末休診預警'
+              }
+              aria-label={t('weekendAlert')}
             >
-              <AlertTriangle className={`w-3.5 h-3.5 ${weekendWarningCount > 0 ? 'text-amber-500' : 'text-slate-400'}`} />
-              <span className="hidden sm:inline">休診預警</span>
+              <AlertTriangle className={`w-4 h-4 shrink-0 ${weekendWarningCount > 0 ? 'text-amber-500' : 'text-slate-400'}`} />
+              <span className="hidden md:inline whitespace-nowrap">{t('weekendAlert')}</span>
               {weekendWarningCount > 0 && (
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black leading-tight animate-pulse">
+                  {weekendWarningCount}
+                </span>
               )}
             </button>
 
-            {/* 資料備份還原 */}
+            {/* 設置按鈕 (更換資料備份還原為「設置」分頁) */}
             <button
-              onClick={() => setIsBackupOpen(true)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-white border-2 border-sky-100 hover:bg-sky-50 text-sky-900 text-xs font-bold transition cursor-pointer shadow-2xs active:scale-95"
-              title="備份與還原資料"
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-1 p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-white border-2 border-sky-100 hover:bg-sky-50 text-sky-900 text-xs font-bold transition cursor-pointer shadow-2xs active:scale-95 shrink-0"
+              title={t('settings')}
+              aria-label={t('settings')}
             >
-              <Download className="w-3.5 h-3.5 text-sky-600" />
-              <span className="hidden md:inline">備份</span>
+              <Settings className="w-4 h-4 text-sky-600 shrink-0" />
+              <span className="hidden lg:inline whitespace-nowrap">{t('settings')}</span>
             </button>
 
             {/* PWA 安裝按鈕 */}
@@ -247,10 +251,10 @@ export default function App() {
                 setEditingMedication(null);
                 setIsFormOpen(true);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-md shadow-sky-400/30 transition cursor-pointer"
+              className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-md shadow-sky-400/30 transition cursor-pointer shrink-0 whitespace-nowrap"
             >
-              <Plus className="w-4 h-4" />
-              <span>新增藥物</span>
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>{t('addMedication')}</span>
             </button>
           </div>
         </div>
@@ -272,19 +276,19 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2 text-xs font-bold bg-white/20 backdrop-blur-md px-3 py-1 rounded-full w-fit mb-1.5">
                 <Sun className="w-3.5 h-3.5 text-yellow-200" />
-                晴空日常・用藥打卡守護
+                {t('appHeroBadge')}
               </div>
               <h2 className="text-lg sm:text-2xl font-black tracking-tight drop-shadow-xs">
-                今天也要元氣滿滿，準時服藥喔！🌱
+                {t('appHeroTitle')}
               </h2>
               <p className="text-xs sm:text-sm text-sky-100 mt-1 max-w-xl leading-relaxed">
-                自動推算每件包裝與單量剩餘、預測用罄日期，週末休診提早提醒不漏接。
+                {t('appHeroDesc')}
               </p>
             </div>
 
             <div className="flex items-center gap-2 bg-white/25 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/30 text-xs font-bold shrink-0">
               <Sparkles className="w-4 h-4 text-yellow-200 animate-spin-slow" />
-              <span>健康小精靈守護中</span>
+              <span>{t('appGuardian')}</span>
             </div>
           </div>
         </div>
@@ -296,7 +300,7 @@ export default function App() {
               <CalendarDays className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs text-sky-800 font-bold">檢視日期與服藥進度</div>
+              <div className="text-xs text-sky-800 font-bold">{t('dateProgressTitle')}</div>
               <div className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
                 <span>{formatDate(selectedDate)}</span>
                 <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
@@ -304,7 +308,7 @@ export default function App() {
                 </span>
                 {isToday && (
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-pink-400 to-rose-400 text-white shadow-2xs animate-pulse">
-                    今日 ✨
+                    {t('todayBadge')}
                   </span>
                 )}
               </div>
@@ -327,7 +331,7 @@ export default function App() {
                   : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200'
               }`}
             >
-              回到今日
+              {t('backToToday')}
             </button>
             <button
               onClick={handleNextDay}
@@ -357,15 +361,15 @@ export default function App() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜尋藥物品名、學名、備註叮嚀..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full pl-10 pr-4 py-2.5 rounded-2xl border-2 border-sky-100 bg-white/95 text-xs sm:text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-300 shadow-sm"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
                 >
-                  清除
+                  {t('clearSearch')}
                 </button>
               )}
             </div>
@@ -380,7 +384,7 @@ export default function App() {
                     : 'bg-white border-2 border-sky-100 text-sky-900 hover:bg-sky-50'
                 }`}
               >
-                🌿 使用中 ({medications.filter((m) => m.status !== 'archived' && (!m.startDate || m.startDate <= formatDate(selectedDate))).length})
+                {t('filterActive')} ({medications.filter((m) => m.status !== 'archived' && (!m.startDate || m.startDate <= formatDate(selectedDate))).length})
               </button>
               <button
                 onClick={() => setStatusFilter('upcoming')}
@@ -390,7 +394,7 @@ export default function App() {
                     : 'bg-white border-2 border-indigo-100 text-indigo-900 hover:bg-indigo-50'
                 }`}
               >
-                ⏳ 即將開始 ({medications.filter((m) => m.status !== 'archived' && m.startDate && m.startDate > formatDate(selectedDate)).length})
+                {t('filterUpcoming')} ({medications.filter((m) => m.status !== 'archived' && m.startDate && m.startDate > formatDate(selectedDate)).length})
               </button>
               <button
                 onClick={() => setStatusFilter('all')}
@@ -400,7 +404,7 @@ export default function App() {
                     : 'bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                全部 ({medications.length})
+                {t('filterAll')} ({medications.length})
               </button>
               <button
                 onClick={() => setStatusFilter('low_stock')}
@@ -411,7 +415,7 @@ export default function App() {
                 }`}
               >
                 <Flame className="w-3.5 h-3.5" />
-                庫存告急 (≤3天)
+                {t('filterLowStock')}
               </button>
               <button
                 onClick={() => setStatusFilter('weekend_warning')}
@@ -422,7 +426,7 @@ export default function App() {
                 }`}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
-                週末用罄預警
+                {t('filterWeekendWarning')}
               </button>
               <button
                 onClick={() => setStatusFilter('exhausted')}
@@ -432,7 +436,7 @@ export default function App() {
                     : 'bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                已用罄
+                {t('filterExhausted')}
               </button>
             </div>
           </div>
@@ -447,47 +451,52 @@ export default function App() {
                   : 'bg-white border-2 border-sky-100 text-sky-900 hover:bg-sky-50'
               }`}
             >
-              🌈 全部類別
+              {t('filterAllCategories')}
             </button>
             {Object.entries(CATEGORY_LABELS).map(([key, info]) => (
               <button
                 key={key}
                 onClick={() => setSelectedCategory(key)}
-                className={`px-3.5 py-1.5 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer active:scale-95 shadow-2xs ${
+                className={`flex items-center gap-1 px-3.5 py-1.5 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer active:scale-95 shadow-2xs ${
                   selectedCategory === key
-                    ? `${info.bg} ${info.text} border-2 ${info.border} shadow-sm font-black`
-                    : 'bg-white border-2 border-slate-100 text-slate-700 hover:bg-slate-50'
+                    ? 'bg-sky-600 text-white shadow-sky-200 border-2 border-sky-700'
+                    : 'bg-white border-2 border-sky-100 text-slate-700 hover:bg-sky-50'
                 }`}
               >
-                {info.icon} {info.label}
+                <span>{info.icon}</span>
+                <span>{info.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* 藥物卡片清單列表 */}
+        {/* 藥品清單展示卡片區 */}
         {filteredMedications.length === 0 ? (
-          <div className="py-16 px-4 text-center rounded-3xl bg-white/95 backdrop-blur-md border-2 border-sky-100 shadow-sm">
-            <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-sky-100 via-blue-100 to-pink-100 text-sky-600 flex items-center justify-center mb-3 shadow-sm animate-float">
-              <Pill className="w-8 h-8" />
+          <div className="p-8 sm:p-12 text-center rounded-3xl bg-white/90 backdrop-blur-md border-2 border-sky-100 shadow-sm space-y-3">
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-sky-50 text-sky-400 flex items-center justify-center animate-float">
+              <Pill className="w-8 h-8 rotate-45" />
             </div>
-            <h3 className="text-base sm:text-lg font-black text-slate-800">未找到符合條件的藥物</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            <h3 className="text-base sm:text-lg font-bold text-slate-800">
               {searchQuery || selectedCategory !== 'all' || statusFilter !== 'all'
-                ? '請嘗試調整搜尋關鍵字或清除篩選條件'
-                : '目前尚未新增任何常備或處方藥物，立即點擊下方按鈕建立！'}
+                ? '沒有找到符合條件的常備藥物'
+                : '目前尚未建立任何常備藥物紀錄'}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              {searchQuery || selectedCategory !== 'all' || statusFilter !== 'all'
+                ? '試試調整搜尋關鍵字、類別或狀態標籤'
+                : '點擊上方「新增藥物」，記錄您的慢性病處方、保健品或備用成藥吧！'}
             </p>
-            <div className="mt-4 flex items-center justify-center gap-2">
-              {(searchQuery || selectedCategory !== 'all' || statusFilter !== 'all') && (
+            <div className="pt-2 flex justify-center gap-3">
+              {(searchQuery || selectedCategory !== 'all' || statusFilter !== 'active') && (
                 <button
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedCategory('all');
-                    setStatusFilter('all');
+                    setStatusFilter('active');
                   }}
-                  className="px-4 py-2 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-bold transition cursor-pointer"
+                  className="px-4 py-2 rounded-2xl border-2 border-sky-100 text-sky-800 text-xs font-bold hover:bg-sky-50 transition cursor-pointer"
                 >
-                  清除所有篩選
+                  重置篩選條件
                 </button>
               )}
               <button
@@ -497,7 +506,7 @@ export default function App() {
                 }}
                 className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white text-xs font-bold transition shadow-md shadow-sky-300/30 cursor-pointer active:scale-95"
               >
-                + 新增藥物
+                + {t('addMedication')}
               </button>
             </div>
           </div>
@@ -543,6 +552,16 @@ export default function App() {
         medications={medications}
         onSelectMedication={handleOpenDetail}
         onAdjustStock={adjustStock}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        medications={medications}
+        onOpenBackupModal={() => setIsBackupOpen(true)}
+        onExportJSON={exportDataAsJSON}
+        onImportJSON={importDataFromJSON}
+        onResetToSampleData={resetToSampleData}
       />
 
       <BackupModal
