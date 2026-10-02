@@ -263,10 +263,10 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
           {/* 核心數據區塊：現存剩餘量 vs 應剩餘用量 (預算差異考慮 1 天用藥容許範圍) */}
           <div className="mt-3.5 p-3.5 rounded-2xl bg-gradient-to-br from-sky-50/70 via-blue-50/50 to-teal-50/40 border-2 border-sky-100 space-y-2.5">
             {/* 1. 現存剩餘量 (實際扣除已打卡服用消耗量) */}
-            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
               <div>
                 <div className="text-[11px] font-black text-sky-900 flex items-center gap-1">
-                  <span>現存剩餘量</span>
+                  <span>{t('actualStockRemaining')}</span>
                   {forecast.totalConsumedUnits > 0 && (
                     <span className="text-[10px] text-teal-700 font-bold bg-teal-100/70 px-1.5 py-0.2 rounded-md">
                       已打卡服用 -{forecast.totalConsumedUnits}{medication.packageSpec.unitName}
@@ -283,17 +283,17 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                 </div>
               </div>
 
-              {/* 2. 應剩餘用量 */}
-              <div className="sm:text-right pt-1.5 sm:pt-0 border-t sm:border-t-0 border-sky-200/50">
-                <div className="text-[11px] font-bold text-slate-600 flex items-center sm:justify-end gap-1">
-                  <Scale className="w-3 h-3 text-sky-600" />
-                  <span>應剩餘用量</span>
+              {/* 2. 應剩餘用量 (呈現方式同現存剩餘量一致) */}
+              <div className="sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-sky-200/50">
+                <div className="text-[11px] font-black text-slate-800 flex items-center sm:justify-end gap-1">
+                  <Scale className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>{t('theoreticalStockRemaining')}</span>
                 </div>
                 <div className="flex items-baseline sm:justify-end gap-1.5 mt-0.5">
-                  <span className="text-sm font-black text-slate-700">
+                  <span className="text-base sm:text-lg font-black text-slate-900">
                     {forecast.formattedTheoreticalStock.displayString}
                   </span>
-                  <span className="text-[11px] text-slate-500 font-bold">
+                  <span className="text-xs text-slate-600 font-bold">
                     ({forecast.formattedTheoreticalStock.totalUnitsString})
                   </span>
                 </div>
