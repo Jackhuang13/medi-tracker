@@ -19,6 +19,8 @@ import {
   Star,
   Scale,
   X,
+  CalendarClock,
+  RotateCcw,
 } from 'lucide-react';
 import { Medication, UsageTimeSlot } from '../types/medication';
 import {
@@ -38,6 +40,7 @@ interface MedicationCardProps {
   onViewDetail: (med: Medication) => void;
   onToggleCheck: (id: string, dateKey: string, slot: UsageTimeSlot | string) => void;
   onBatchCheck: (id: string, dateKey: string, forceCheck: boolean) => void;
+  onUpdateAdherenceDays?: (id: string, missedDays: number, extraDays: number) => void;
 }
 
 export const MedicationCard: React.FC<MedicationCardProps> = ({
@@ -48,10 +51,46 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
   onViewDetail,
   onToggleCheck,
   onBatchCheck,
+  onUpdateAdherenceDays,
 }) => {
   const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [directInputModal, setDirectInputModal] = useState<{
+    type: 'missed' | 'extra';
+    value: string;
+  } | null>(null);
+
+  const currentMissedDays = medication.missedDays || 0;
+  const currentExtraDays = medication.extraDays || 0;
+
+  const handleAdjustMissed = (delta: number) => {
+    if (medication.frequency === 'PRN') return;
+    const nextMissed = Math.max(0, currentMissedDays + delta);
+    onUpdateAdherenceDays?.(medication.id, nextMissed, currentExtraDays);
+  };
+
+  const handleAdjustExtra = (delta: number) => {
+    if (medication.frequency === 'PRN') return;
+    const nextExtra = Math.max(0, currentExtraDays + delta);
+    onUpdateAdherenceDays?.(medication.id, currentMissedDays, nextExtra);
+  };
+
+  const handleResetAdherence = () => {
+    onUpdateAdherenceDays?.(medication.id, 0, 0);
+  };
+
+  const handleSaveDirectInput = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!directInputModal) return;
+    const num = Math.max(0, Math.floor(Number(directInputModal.value) || 0));
+    if (directInputModal.type === 'missed') {
+      onUpdateAdherenceDays?.(medication.id, num, currentExtraDays);
+    } else {
+      onUpdateAdherenceDays?.(medication.id, currentMissedDays, num);
+    }
+    setDirectInputModal(null);
+  };
 
   const dateKey = formatDate(selectedDate);
   const forecast = calculateMedicationForecast(medication, selectedDate);
@@ -275,6 +314,22 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                           僅剩 {forecast.theoreticalUnitsRemaining} {medication.packageSpec.unitName} (不足今日完整用量)
                         </span>
                       )}
+                      {forecast.netAdherenceDays > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs"
+                          title={`因忘吃少服 ${forecast.missedDays} 天，在庫預估保留多 ${forecast.adherenceImpactUnits} ${medication.packageSpec.unitName}`}
+                        >
+                          +{forecast.adherenceImpactUnits} {medication.packageSpec.unitName} (忘吃留存)
+                        </span>
+                      )}
+                      {forecast.netAdherenceDays < 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-black bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs"
+                          title={`因多吃超服 ${forecast.extraDays} 天，在庫預估加速消耗 ${Math.abs(forecast.adherenceImpactUnits)} ${medication.packageSpec.unitName}`}
+                        >
+                          -{Math.abs(forecast.adherenceImpactUnits)} {medication.packageSpec.unitName} (多吃扣除)
+                        </span>
+                      )}
                     </>
                   )}
                   <span className="text-xs text-slate-600 font-bold ml-1">
@@ -307,6 +362,182 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                 )}
               </div>
             </div>
+          </div>
+
+          {/* 忘吃或多吃日數調整區塊 (直接影響預估在庫藥量與用罄日) */}
+          <div className="mt-3 p-3 sm:p-3.5 rounded-2xl bg-white/95 border-2 border-indigo-100/80 shadow-2xs space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                  <CalendarClock className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[12px] font-black text-slate-800 flex items-center gap-1.5 truncate">
+                    <span>{t('adherenceSectionTitle')}</span>
+                    <span className="text-[10px] font-semibold text-slate-500 hidden sm:inline">
+                      ({t('adherenceSectionDesc')})
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {(currentMissedDays > 0 || currentExtraDays > 0) && (
+                <button
+                  type="button"
+                  onClick={handleResetAdherence}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  title="將忘吃與多吃日數重置為 0 天"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>{t('resetAdherence')}</span>
+                </button>
+              )}
+            </div>
+
+            {medication.frequency === 'PRN' ? (
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500 font-bold">
+                {t('adherencePrnNote')}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {/* 忘吃 (少吃) 日數 */}
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-emerald-50/70 to-teal-50/40 border border-emerald-200 flex flex-col justify-between space-y-1.5">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[11px] font-black text-emerald-950 flex items-center gap-1">
+                        <span>{t('missedDaysLabel')}</span>
+                      </span>
+                      {currentMissedDays > 0 && (
+                        <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900">
+                          +{Math.round(currentMissedDays * forecast.dailyConsumptionRate * 10) / 10} {medication.packageSpec.unitName}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustMissed(-1)}
+                        disabled={currentMissedDays <= 0}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition cursor-pointer font-bold ${
+                          currentMissedDays <= 0
+                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                            : 'bg-white hover:bg-emerald-100 text-emerald-700 shadow-2xs border border-emerald-200 active:scale-95'
+                        }`}
+                        title="忘吃天數 -1"
+                        aria-label="忘吃天數減一"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDirectInputModal({ type: 'missed', value: String(currentMissedDays) })}
+                        className="flex-1 text-center py-0.5 rounded-lg hover:bg-emerald-100/50 transition cursor-pointer"
+                        title="點擊直接輸入忘吃天數"
+                      >
+                        <span className="text-sm sm:text-base font-black text-emerald-950">
+                          {currentMissedDays}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-700 ml-0.5">
+                          {t('daysUnit')}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustMissed(1)}
+                        className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white flex items-center justify-center shadow-2xs transition cursor-pointer font-bold"
+                        title="忘吃天數 +1 (藥物未服，在庫藥量增加)"
+                        aria-label="忘吃天數加一"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 多吃 (超服) 日數 */}
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-amber-50/70 to-rose-50/40 border border-amber-200 flex flex-col justify-between space-y-1.5">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[11px] font-black text-amber-950 flex items-center gap-1">
+                        <span>{t('extraDaysLabel')}</span>
+                      </span>
+                      {currentExtraDays > 0 && (
+                        <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-amber-200 text-amber-900">
+                          -{Math.round(currentExtraDays * forecast.dailyConsumptionRate * 10) / 10} {medication.packageSpec.unitName}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustExtra(-1)}
+                        disabled={currentExtraDays <= 0}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition cursor-pointer font-bold ${
+                          currentExtraDays <= 0
+                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                            : 'bg-white hover:bg-amber-100 text-amber-800 shadow-2xs border border-amber-200 active:scale-95'
+                        }`}
+                        title="多吃天數 -1"
+                        aria-label="多吃天數減一"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDirectInputModal({ type: 'extra', value: String(currentExtraDays) })}
+                        className="flex-1 text-center py-0.5 rounded-lg hover:bg-amber-100/50 transition cursor-pointer"
+                        title="點擊直接輸入多吃天數"
+                      >
+                        <span className="text-sm sm:text-base font-black text-amber-950">
+                          {currentExtraDays}
+                        </span>
+                        <span className="text-[10px] font-bold text-amber-800 ml-0.5">
+                          {t('daysUnit')}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustExtra(1)}
+                        className="w-7 h-7 rounded-lg bg-amber-600 hover:bg-amber-700 active:scale-95 text-white flex items-center justify-center shadow-2xs transition cursor-pointer font-bold"
+                        title="多吃天數 +1 (藥物超服，在庫藥量扣減)"
+                        aria-label="多吃天數加一"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 淨影響說明文字 */}
+                <div className="text-[11px] leading-tight font-bold">
+                  {forecast.netAdherenceDays > 0 ? (
+                    <p className="text-emerald-800 bg-emerald-50/80 px-2 py-1 rounded-lg border border-emerald-200/80">
+                      {t('adherenceNetMissed', {
+                        days: forecast.missedDays,
+                        amount: forecast.adherenceImpactUnits,
+                        unit: medication.packageSpec.unitName,
+                      })}
+                    </p>
+                  ) : forecast.netAdherenceDays < 0 ? (
+                    <p className="text-amber-900 bg-amber-50/80 px-2 py-1 rounded-lg border border-amber-200/80">
+                      {t('adherenceNetExtra', {
+                        days: forecast.extraDays,
+                        amount: Math.abs(forecast.adherenceImpactUnits),
+                        unit: medication.packageSpec.unitName,
+                      })}
+                    </p>
+                  ) : (
+                    <p className="text-slate-400 text-center py-0.5">
+                      {t('adherenceNetNormal')}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* 假日警示機制 (僅在即期 <=14 天且用罄落在週末時顯示) */}
@@ -402,6 +633,75 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                 {t('confirmDelete')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 直接輸入天數對話框 */}
+      {directInputModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-xs rounded-3xl bg-white p-5 shadow-2xl border-2 border-indigo-100 space-y-3.5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <CalendarClock className="w-4 h-4 text-indigo-600" />
+                {directInputModal.type === 'missed' ? t('missedDaysLabel') : t('extraDaysLabel')}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setDirectInputModal(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDirectInput} className="space-y-3">
+              <div>
+                <label className="text-xs text-slate-600 font-bold block mb-1">
+                  {directInputModal.type === 'missed'
+                    ? '請輸入忘記服藥的累計天數（少吃）：'
+                    : '請輸入超額服藥的累計天數（多吃）：'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="365"
+                    step="1"
+                    value={directInputModal.value}
+                    onChange={(e) =>
+                      setDirectInputModal({ ...directInputModal, value: e.target.value })
+                    }
+                    className="w-full px-3 py-2 text-base font-black rounded-xl border-2 border-indigo-100 focus:border-indigo-500 focus:outline-none"
+                    autoFocus
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+                    {t('daysUnit')}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1 font-medium">
+                  {directInputModal.type === 'missed'
+                    ? '忘吃天數將保留在庫，預估在庫藥量增加、用罄日順延。'
+                    : '多吃天數將額外消耗，預估在庫藥量減少、用罄日提前。'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setDirectInputModal(null)}
+                  className="w-full py-2 rounded-xl border-2 border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="w-full py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-black text-xs shadow-md shadow-indigo-200 hover:from-sky-600 hover:to-indigo-700 cursor-pointer"
+                >
+                  {t('saveInput')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

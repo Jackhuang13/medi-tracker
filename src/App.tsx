@@ -50,6 +50,7 @@ export default function App() {
     toggleDoseCheck,
     batchCheckDate,
     adjustStock,
+    updateAdherenceDays,
     exportDataAsJSON,
     importDataFromJSON,
   } = useMedications();
@@ -67,6 +68,12 @@ export default function App() {
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
   const [detailedMedication, setDetailedMedication] = useState<Medication | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // 保持詳情彈窗與最新狀態同步
+  const currentDetailedMedication = useMemo(() => {
+    if (!detailedMedication) return null;
+    return medications.find((m) => m.id === detailedMedication.id) || detailedMedication;
+  }, [medications, detailedMedication]);
   const [isRefillScheduleOpen, setIsRefillScheduleOpen] = useState(false);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -522,6 +529,7 @@ export default function App() {
                 onViewDetail={handleOpenDetail}
                 onToggleCheck={toggleDoseCheck}
                 onBatchCheck={batchCheckDate}
+                onUpdateAdherenceDays={updateAdherenceDays}
               />
             ))}
           </div>
@@ -537,11 +545,12 @@ export default function App() {
       />
 
       <MedicationDetailModal
-        medication={detailedMedication}
+        medication={currentDetailedMedication}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onEdit={handleOpenEdit}
         onDelete={deleteMedication}
+        onUpdateAdherenceDays={updateAdherenceDays}
         selectedDate={selectedDate}
       />
 

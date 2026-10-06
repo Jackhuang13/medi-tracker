@@ -114,6 +114,10 @@ export interface Medication {
   createdAt: string;                  // 建立時間
   updatedAt: string;                  // 更新時間
 
+  // 忘吃或多吃日數 (影響預估在庫藥量)
+  missedDays?: number;                // 忘吃日數 (天數 >= 0，少消耗每日劑量，預估在庫藥量增加)
+  extraDays?: number;                 // 多吃日數 (天數 >= 0，多消耗每日劑量，預估在庫藥量減少)
+
   // 打卡紀錄: { [dateYYYYMMDD]: { [slot]: boolean } }
   doseCheckLogs?: Record<string, Record<string, boolean>>;
 
@@ -123,6 +127,12 @@ export interface Medication {
 
 /** 計算結果：用罄預測與庫存推算資訊 */
 export interface MedicationForecast {
+  // 忘吃或多吃日數與其庫存影響
+  missedDays: number;                 // 忘吃日數
+  extraDays: number;                  // 多吃日數
+  netAdherenceDays: number;           // 淨偏差日數 (missedDays - extraDays)
+  adherenceImpactUnits: number;       // 庫存單量影響值 (netAdherenceDays * dailyRate)
+
   // 現存剩餘量 (實際扣除已使用/打卡量後之在手庫存)
   actualUnitsRemaining: number;
   formattedActualStock: {

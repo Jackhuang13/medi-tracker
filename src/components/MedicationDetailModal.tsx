@@ -12,6 +12,10 @@ import {
   Star,
   Flame,
   ShieldAlert,
+  CalendarClock,
+  Plus,
+  Minus,
+  RotateCcw,
 } from 'lucide-react';
 import { Medication } from '../types/medication';
 import {
@@ -32,6 +36,7 @@ interface MedicationDetailModalProps {
   onClose: () => void;
   onEdit: (med: Medication) => void;
   onDelete: (id: string) => void;
+  onUpdateAdherenceDays?: (id: string, missedDays: number, extraDays: number) => void;
   selectedDate?: Date;
 }
 
@@ -41,6 +46,7 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
   onClose,
   onEdit,
   onDelete,
+  onUpdateAdherenceDays,
   selectedDate = new Date(),
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'timeline'>('overview');
@@ -50,6 +56,25 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
   const forecast = calculateMedicationForecast(medication, selectedDate);
   const timeline = generateConsumptionTimeline(medication, 14, selectedDate);
   const categoryInfo = CATEGORY_LABELS[medication.category] || CATEGORY_LABELS.other;
+
+  const currentMissedDays = medication.missedDays || 0;
+  const currentExtraDays = medication.extraDays || 0;
+
+  const handleAdjustMissed = (delta: number) => {
+    if (medication.frequency === 'PRN') return;
+    const next = Math.max(0, currentMissedDays + delta);
+    onUpdateAdherenceDays?.(medication.id, next, currentExtraDays);
+  };
+
+  const handleAdjustExtra = (delta: number) => {
+    if (medication.frequency === 'PRN') return;
+    const next = Math.max(0, currentExtraDays + delta);
+    onUpdateAdherenceDays?.(medication.id, currentMissedDays, next);
+  };
+
+  const handleResetAdherence = () => {
+    onUpdateAdherenceDays?.(medication.id, 0, 0);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-sky-950/40 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
@@ -129,8 +154,18 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
                       <Package className="w-4 h-4 text-sky-600" />
                       預估在庫藥量 (含今日)
                     </div>
-                    <div className="mt-2 text-lg sm:text-xl font-black text-sky-950">
-                      {forecast.formattedTheoreticalStock.displayString}
+                    <div className="mt-2 text-lg sm:text-xl font-black text-sky-950 flex flex-wrap items-baseline gap-1.5">
+                      <span>{forecast.formattedTheoreticalStock.displayString}</span>
+                      {forecast.netAdherenceDays > 0 && (
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          +{forecast.adherenceImpactUnits} {medication.packageSpec.unitName} (忘吃留存)
+                        </span>
+                      )}
+                      {forecast.netAdherenceDays < 0 && (
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-lg bg-rose-100 text-rose-800 border border-rose-300">
+                          -{Math.abs(forecast.adherenceImpactUnits)} {medication.packageSpec.unitName} (多吃扣除)
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="text-[11px] text-sky-700 font-bold mt-1 pt-1 border-t border-sky-200/60">
@@ -231,6 +266,137 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
                   </p>
                 </div>
               )}
+
+              {/* 忘吃或多吃日數對在庫藥量影響分析 */}
+              <div className="p-4 rounded-3xl bg-white border-2 border-indigo-100 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <CalendarClock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900">
+                        忘吃或多吃日數與在庫影響推算
+                      </h4>
+                      <p className="text-[11px] text-slate-500 font-bold">
+                        忘吃使未服用藥物留存（在庫增加）；多吃則加速耗盡（在庫減少）
+                      </p>
+                    </div>
+                  </div>
+
+                  {(currentMissedDays > 0 || currentExtraDays > 0) && onUpdateAdherenceDays && (
+                    <button
+                      type="button"
+                      onClick={handleResetAdherence}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>歸零重置</span>
+                    </button>
+                  )}
+                </div>
+
+                {medication.frequency === 'PRN' ? (
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 font-bold text-center">
+                    PRN 視需要用藥，無每日固定消耗排程，不計算忘吃/多吃日數推算。
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* 忘吃日數 */}
+                      <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between gap-2">
+                        <div>
+                          <div className="text-xs font-black text-emerald-950">忘吃日數（少吃）</div>
+                          <div className="text-[11px] text-emerald-800 font-bold mt-0.5">
+                            在庫增加 +{Math.round(currentMissedDays * forecast.dailyConsumptionRate * 10) / 10} {medication.packageSpec.unitName}
+                          </div>
+                        </div>
+
+                        {onUpdateAdherenceDays ? (
+                          <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl border border-emerald-200 shadow-2xs">
+                            <button
+                              type="button"
+                              onClick={() => handleAdjustMissed(-1)}
+                              disabled={currentMissedDays <= 0}
+                              className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
+                                currentMissedDays <= 0
+                                  ? 'text-slate-300 cursor-not-allowed'
+                                  : 'text-emerald-700 hover:bg-emerald-50 cursor-pointer'
+                              }`}
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="min-w-[28px] text-center text-sm font-black text-emerald-950">
+                              {currentMissedDays} 天
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleAdjustMissed(1)}
+                              className="w-6 h-6 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center font-bold text-xs cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-black text-emerald-950">{currentMissedDays} 天</span>
+                        )}
+                      </div>
+
+                      {/* 多吃日數 */}
+                      <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 flex items-center justify-between gap-2">
+                        <div>
+                          <div className="text-xs font-black text-amber-950">多吃日數（超服）</div>
+                          <div className="text-[11px] text-amber-800 font-bold mt-0.5">
+                            在庫扣減 -{Math.round(currentExtraDays * forecast.dailyConsumptionRate * 10) / 10} {medication.packageSpec.unitName}
+                          </div>
+                        </div>
+
+                        {onUpdateAdherenceDays ? (
+                          <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl border border-amber-200 shadow-2xs">
+                            <button
+                              type="button"
+                              onClick={() => handleAdjustExtra(-1)}
+                              disabled={currentExtraDays <= 0}
+                              className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
+                                currentExtraDays <= 0
+                                  ? 'text-slate-300 cursor-not-allowed'
+                                  : 'text-amber-800 hover:bg-amber-50 cursor-pointer'
+                              }`}
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="min-w-[28px] text-center text-sm font-black text-amber-950">
+                              {currentExtraDays} 天
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleAdjustExtra(1)}
+                              className="w-6 h-6 rounded-lg bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center font-bold text-xs cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-black text-amber-950">{currentExtraDays} 天</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-600 font-bold flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        公式：有效消耗天數 = 開始至今經過天數 ({forecast.isNotStartedYet ? 0 : Math.max(0, Math.floor((new Date().getTime() - new Date(medication.startDate).getTime()) / (1000 * 3600 * 24)))}) - 忘吃 ({forecast.missedDays}天) + 多吃 ({forecast.extraDays}天)
+                      </div>
+                      <div className="font-black text-indigo-700">
+                        {forecast.netAdherenceDays > 0
+                          ? `在庫留存 +${forecast.adherenceImpactUnits} ${medication.packageSpec.unitName} (用罄順延 ${forecast.missedDays} 天)`
+                          : forecast.netAdherenceDays < 0
+                          ? `加速消耗 ${Math.abs(forecast.adherenceImpactUnits)} ${medication.packageSpec.unitName} (用罄提前 ${forecast.extraDays} 天)`
+                          : '規律服用，目前無日數偏差'}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* 用藥指引與排程明細 */}
               <div className="p-4 rounded-3xl bg-sky-50/40 border-2 border-sky-100 space-y-3">

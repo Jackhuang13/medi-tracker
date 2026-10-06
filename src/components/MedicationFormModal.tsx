@@ -73,6 +73,8 @@ export const MedicationFormModal: React.FC<MedicationFormModalProps> = ({
   const [dosagePerTime, setDosagePerTime] = useState<number | string>(1);
   const [frequency, setFrequency] = useState<DoseFrequency>('QD');
   const [dailyTimes, setDailyTimes] = useState<number | string>(1);
+  const [missedDays, setMissedDays] = useState<number | string>(0);
+  const [extraDays, setExtraDays] = useState<number | string>(0);
 
   // 額外資訊
   const [expiryDate, setExpiryDate] = useState('');
@@ -103,6 +105,8 @@ export const MedicationFormModal: React.FC<MedicationFormModalProps> = ({
       setDosagePerTime(initialData.dosagePerTime || 1);
       setFrequency(initialData.frequency || 'QD');
       setDailyTimes(initialData.dailyTimes || 1);
+      setMissedDays(initialData.missedDays ?? 0);
+      setExtraDays(initialData.extraDays ?? 0);
       setExpiryDate(initialData.expiryDate || '');
       setHospitalOrPharmacy(initialData.hospitalOrPharmacy || '');
       setDoctorInstructions(initialData.doctorInstructions || '');
@@ -126,6 +130,8 @@ export const MedicationFormModal: React.FC<MedicationFormModalProps> = ({
       setDosagePerTime(1);
       setFrequency('QD');
       setDailyTimes(1);
+      setMissedDays(0);
+      setExtraDays(0);
       setExpiryDate('');
       setHospitalOrPharmacy('');
       setDoctorInstructions('');
@@ -251,6 +257,8 @@ export const MedicationFormModal: React.FC<MedicationFormModalProps> = ({
       dosagePerTime: Number(dosagePerTime),
       frequency,
       dailyTimes: frequency === 'QD' ? 1 : frequency === 'BID' ? 2 : frequency === 'TID' ? 3 : frequency === 'QID' ? 4 : Number(dailyTimes),
+      missedDays: Math.max(0, Math.floor(Number(missedDays) || 0)),
+      extraDays: Math.max(0, Math.floor(Number(extraDays) || 0)),
       expiryDate,
       hospitalOrPharmacy: hospitalOrPharmacy.trim(),
       doctorInstructions: doctorInstructions.trim(),
@@ -626,6 +634,47 @@ export const MedicationFormModal: React.FC<MedicationFormModalProps> = ({
                   onChange={(e) => setDosagePerTime(e.target.value)}
                   className="w-full px-4 py-2 rounded-2xl border-2 border-sky-100 bg-sky-50/30 text-xs font-black focus:ring-2 focus:ring-sky-400"
                 />
+              </div>
+            </div>
+
+            {/* 忘吃或多吃日數 (影響預估在庫藥量) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-indigo-50/40 border border-indigo-100">
+              <div>
+                <label className="block text-xs font-bold text-indigo-900 mb-1">
+                  忘吃日數（少吃天數）
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={missedDays}
+                    onChange={(e) => setMissedDays(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border-2 border-indigo-100 bg-white text-xs font-black text-slate-800 focus:ring-2 focus:ring-indigo-400"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-indigo-500">
+                    天 (庫存增加)
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-amber-900 mb-1">
+                  多吃日數（超服天數）
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={extraDays}
+                    onChange={(e) => setExtraDays(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border-2 border-amber-100 bg-white text-xs font-black text-slate-800 focus:ring-2 focus:ring-amber-400"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-600">
+                    天 (加速消耗)
+                  </span>
+                </div>
               </div>
             </div>
 

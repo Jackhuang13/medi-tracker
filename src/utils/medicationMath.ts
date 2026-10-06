@@ -262,17 +262,25 @@ export function calculateMedicationForecast(
 
   const dailyRate = calculateDailyRate(med);
 
+  // 忘吃與多吃日數 (Adherence Days)
+  const missedDays = Math.max(0, Number(med.missedDays) || 0);
+  const extraDays = Math.max(0, Number(med.extraDays) || 0);
+  const netAdherenceDays = missedDays - extraDays; // 正數：在庫增加天數；負數：在庫減少天數
+  const adherenceImpactUnits = Math.round(netAdherenceDays * dailyRate * 10) / 10;
+
   // 檢查基準日是否尚未到達開始用藥日
   const startD = parseDate(med.startDate || formatDate(referenceDate));
   const daysSinceStart = diffDays(startD, referenceDate);
   const isNotStartedYet = daysSinceStart < 0;
 
-  // 2. 應剩餘用量（理論預算當前量 = 初始總庫存量 - (自開始日至今經過天數 * 每日總量)）
+  // 2. 應剩餘用量（理論預算當前量 = 初始總庫存量 - (有效經過天數 * 每日總量)）
+  // 有效經過天數：自開始日經過天數，扣除忘吃日數（未服用），加上多吃日數（超服）
   const elapsedDays = isNotStartedYet ? 0 : Math.max(0, daysSinceStart);
-  const theoreticalConsumed = calculateTotalConsumption(med, elapsedDays);
+  const effectiveElapsedDays = Math.max(0, elapsedDays - netAdherenceDays);
+  const theoreticalConsumed = calculateTotalConsumption(med, effectiveElapsedDays);
   const theoreticalUnitsRemaining = Math.max(
     0,
-    Math.round((baseUnits - theoreticalConsumed) * 10) / 10
+    Math.min(baseUnits, Math.round((baseUnits - theoreticalConsumed) * 10) / 10)
   );
   const formattedTheoreticalStock = formatStockDisplay(
     theoreticalUnitsRemaining,
@@ -321,6 +329,10 @@ export function calculateMedicationForecast(
   // PRN 視需要用藥處理 (無固定每日消耗)
   if (med.frequency === 'PRN' || dailyRate <= 0) {
     return {
+      missedDays,
+      extraDays,
+      netAdherenceDays: 0,
+      adherenceImpactUnits: 0,
       actualUnitsRemaining,
       formattedActualStock,
       theoreticalUnitsRemaining,
@@ -355,6 +367,10 @@ export function calculateMedicationForecast(
     const todayStr = formatDate(referenceDate);
     const dayOfWeekIdx = referenceDate.getDay();
     return {
+      missedDays,
+      extraDays,
+      netAdherenceDays,
+      adherenceImpactUnits,
       actualUnitsRemaining,
       formattedActualStock,
       theoreticalUnitsRemaining,
@@ -417,6 +433,10 @@ export function calculateMedicationForecast(
   }
 
   return {
+    missedDays,
+    extraDays,
+    netAdherenceDays,
+    adherenceImpactUnits,
     actualUnitsRemaining,
     formattedActualStock,
     theoreticalUnitsRemaining,

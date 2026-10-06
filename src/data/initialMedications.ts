@@ -24,6 +24,8 @@ export const INITIAL_MEDICATIONS: Medication[] = [
     dosagePerTime: 1,
     frequency: 'QD',
     dailyTimes: 1,
+    missedDays: 0,
+    extraDays: 0,
     expiryDate: '2027-08-30',
     hospitalOrPharmacy: '台大醫院 心臟內科 / 慢箋連續處方',
     doctorInstructions: '降膽固醇與預防心血管疾病。服藥期間請避免飲用大量葡萄柚汁。',

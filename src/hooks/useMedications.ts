@@ -196,6 +196,23 @@ export function useMedications() {
     []
   );
 
+  /**
+   * 更新忘吃或多吃日數 (影響預估在庫藥量)
+   */
+  const updateAdherenceDays = useCallback((id: string, missedDays: number, extraDays: number) => {
+    setMedications((prev) =>
+      prev.map((med) => {
+        if (med.id !== id) return med;
+        return {
+          ...med,
+          missedDays: Math.max(0, Math.round(Number(missedDays) || 0)),
+          extraDays: Math.max(0, Math.round(Number(extraDays) || 0)),
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  }, []);
+
   /** 匯出 JSON 資料 */
   const exportDataAsJSON = useCallback(() => {
     const exportPayload = {
@@ -265,6 +282,8 @@ export function useMedications() {
         doctorInstructions: item.doctorInstructions || '',
         storageCondition: item.storageCondition || 'room',
         status: item.status || 'active',
+        missedDays: Math.max(0, Number(item.missedDays) || 0),
+        extraDays: Math.max(0, Number(item.extraDays) || 0),
         createdAt: item.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         doseCheckLogs: item.doseCheckLogs || {},
@@ -291,6 +310,7 @@ export function useMedications() {
     toggleDoseCheck,
     batchCheckDate,
     adjustStock,
+    updateAdherenceDays,
     exportDataAsJSON,
     importDataFromJSON,
   };

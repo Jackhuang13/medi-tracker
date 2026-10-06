@@ -158,7 +158,19 @@ export const RefillScheduleModal: React.FC<RefillScheduleModalProps> = ({
                         </h4>
 
                         <div className="text-xs text-slate-600 font-bold mt-1 flex flex-wrap items-center gap-2">
-                          <span>目前剩餘：<strong className="text-slate-900">{forecast.formattedStock.displayString}</strong></span>
+                          <span>
+                            目前剩餘：<strong className="text-slate-900">{forecast.formattedStock.displayString}</strong>
+                            {forecast.netAdherenceDays > 0 && (
+                              <span className="ml-1 text-[10px] text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded font-black">
+                                +{forecast.adherenceImpactUnits} {med.packageSpec.unitName} (少吃留存)
+                              </span>
+                            )}
+                            {forecast.netAdherenceDays < 0 && (
+                              <span className="ml-1 text-[10px] text-rose-800 bg-rose-100 px-1.5 py-0.5 rounded font-black">
+                                -{Math.abs(forecast.adherenceImpactUnits)} {med.packageSpec.unitName} (多吃扣除)
+                              </span>
+                            )}
+                          </span>
                           <span>|</span>
                           <span>每日總量: {forecast.dailyConsumptionRate} {med.packageSpec.unitName}</span>
                         </div>
