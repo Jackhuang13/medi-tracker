@@ -38,7 +38,6 @@ interface MedicationCardProps {
   onViewDetail: (med: Medication) => void;
   onToggleCheck: (id: string, dateKey: string, slot: UsageTimeSlot | string) => void;
   onBatchCheck: (id: string, dateKey: string, forceCheck: boolean) => void;
-  onAdjustStock: (id: string, changeUnits: number, reason: string) => void;
 }
 
 export const MedicationCard: React.FC<MedicationCardProps> = ({
@@ -49,10 +48,8 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
   onViewDetail,
   onToggleCheck,
   onBatchCheck,
-  onAdjustStock,
 }) => {
   const { t } = useTranslation();
-  const [showQuickAdjust, setShowQuickAdjust] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -226,16 +223,6 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
                     <button
                       onClick={() => {
                         setShowMenu(false);
-                        setShowQuickAdjust(!showQuickAdjust);
-                      }}
-                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-amber-50 hover:text-amber-800 text-left font-bold cursor-pointer transition"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      {t('quickAdjustStock', { unit: medication.packageSpec.unitName })}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowMenu(false);
                         onEdit(medication);
                       }}
                       className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-left font-bold cursor-pointer transition"
@@ -260,56 +247,47 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
             </div>
           </div>
 
-          {/* 核心數據區塊：現存剩餘量 vs 應剩餘用量 (預算差異考慮 1 天用藥容許範圍) */}
+          {/* 核心數據區塊：應剩餘用量 + 1 天用藥量 (今天該用量變色處理) */}
           <div className="mt-3.5 p-3.5 rounded-2xl bg-gradient-to-br from-sky-50/70 via-blue-50/50 to-teal-50/40 border-2 border-sky-100 space-y-2.5">
-            {/* 1. 現存剩餘量 (實際扣除已打卡服用消耗量) */}
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
               <div>
-                <div className="text-[11px] font-black text-sky-900 flex items-center gap-1">
-                  <span>{t('actualStockRemaining')}</span>
-                  {forecast.totalConsumedUnits > 0 && (
-                    <span className="text-[10px] text-teal-700 font-bold bg-teal-100/70 px-1.5 py-0.2 rounded-md">
-                      已打卡服用 -{forecast.totalConsumedUnits}{medication.packageSpec.unitName}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-baseline gap-1.5 mt-0.5">
-                  <span className="text-base sm:text-lg font-black text-sky-950">
-                    {forecast.formattedActualStock.displayString}
-                  </span>
-                  <span className="text-xs text-sky-700 font-bold">
-                    ({forecast.formattedActualStock.totalUnitsString})
-                  </span>
-                </div>
-              </div>
-
-              {/* 2. 應剩餘用量 (呈現方式同現存剩餘量一致) */}
-              <div className="sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-sky-200/50">
-                <div className="text-[11px] font-black text-slate-800 flex items-center sm:justify-end gap-1">
+                <div className="text-[11px] font-black text-slate-800 flex items-center gap-1">
                   <Scale className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>{t('theoreticalStockRemaining')}</span>
+                  <span>預估在庫藥量（含今日用量）</span>
                 </div>
-                <div className="flex items-baseline sm:justify-end gap-1.5 mt-0.5">
-                  <span className="text-base sm:text-lg font-black text-slate-900">
-                    {forecast.formattedTheoreticalStock.displayString}
-                  </span>
-                  <span className="text-xs text-slate-600 font-bold">
+                <div className="flex flex-wrap items-baseline gap-1.5 mt-1">
+                  {forecast.theoreticalUnitsRemaining <= 0 ? (
+                    <span className="text-base sm:text-lg font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-xl border border-rose-200">
+                      已用罄 (0 {medication.packageSpec.unitName}) - 庫存已空
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-base sm:text-lg font-black text-slate-900">
+                        {forecast.holdingUnits > 0 || medication.frequency === 'PRN' ? forecast.formattedHoldingStock.displayString : ''}
+                      </span>
+                      {medication.frequency !== 'PRN' && forecast.todayDoseUnits > 0 && forecast.theoreticalUnitsRemaining >= forecast.todayDoseUnits && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs" title="今日用藥量 (頻次*單劑量)">
+                          + {forecast.todayDoseUnits} {medication.packageSpec.unitName} (今日用量)
+                        </span>
+                      )}
+                      {medication.frequency !== 'PRN' && forecast.theoreticalUnitsRemaining < forecast.todayDoseUnits && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-black bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs" title="庫存不足今日完整用量">
+                          僅剩 {forecast.theoreticalUnitsRemaining} {medication.packageSpec.unitName} (不足今日完整用量)
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <span className="text-xs text-slate-600 font-bold ml-1">
                     ({forecast.formattedTheoreticalStock.totalUnitsString})
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* 差異比較條 */}
+            {/* 預估用罄日 (取消預算差異比較) */}
             <div className="pt-2 border-t border-sky-200/60 flex flex-wrap items-center justify-between text-xs text-slate-700 gap-1.5 font-bold">
-              <div className="flex items-center gap-1">
-                <span className="text-[11px] text-slate-500">預算差異：</span>
-                <span
-                  className={`text-[11px] font-black px-2 py-0.5 rounded-full ${getVarianceBadgeStyle()}`}
-                  title="若差距在 1 天用藥量 (頻次*單劑量) 範圍內視為正常"
-                >
-                  {forecast.varianceText}
-                </span>
+              <div className="flex items-center gap-1 text-[11px] text-slate-600">
+                <span>每日用藥量：{medication.frequency === 'PRN' ? '需要時使用' : `${forecast.dailyConsumptionRate} ${medication.packageSpec.unitName}/天`}</span>
               </div>
 
               {/* 預估用罄日 */}
@@ -364,110 +342,6 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
               開始日：{medication.startDate}
             </div>
           </div>
-
-          {/* 每日服藥打卡區塊 (防呆：若尚未到達開始用藥日，禁止打卡與填寫使用量) */}
-          <div className="mt-3.5 pt-3 border-t border-sky-100/80">
-            {forecast.isNotStartedYet ? (
-              <div className="p-3 rounded-2xl bg-amber-50/90 border-2 border-amber-200 text-amber-950 text-xs space-y-1">
-                <div className="flex items-center gap-1.5 font-black text-amber-900">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>尚未到達開始用藥日 (防呆保護中)</span>
-                </div>
-                <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
-                  此藥物預計於 <strong>{medication.startDate}</strong> 開始使用，今日（{dateKey}）尚未啟用，無法填入使用量與進行打卡。
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-xs font-black text-slate-800">
-                    <CalendarDays className="w-3.5 h-3.5 text-sky-600" />
-                    <span>今日打卡 ({dateKey})・共 {effectiveSlots.length} 次</span>
-                  </div>
-
-                  <button
-                    onClick={() => onBatchCheck(medication.id, dateKey, !isAllChecked)}
-                    className="text-[11px] font-bold text-sky-600 hover:text-sky-800 hover:underline cursor-pointer"
-                  >
-                    {isAllChecked ? '取消打卡' : '一鍵完成打卡 ✨'}
-                  </button>
-                </div>
-
-                {/* 打卡按鈕群組 */}
-                <div className="flex flex-wrap gap-2">
-                  {effectiveSlots.map((slot) => {
-                    const isChecked = !!currentLogs[slot.key];
-
-                    return (
-                      <button
-                        key={slot.key}
-                        onClick={() => onToggleCheck(medication.id, dateKey, slot.key)}
-                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs ${
-                          isChecked
-                            ? 'bg-gradient-to-r from-sky-500 to-teal-500 text-white shadow-sky-200/60'
-                            : 'bg-white hover:bg-sky-50 text-slate-700 border-2 border-sky-100'
-                        }`}
-                        title={`${slot.label} (每次 ${medication.dosagePerTime} ${medication.packageSpec.unitName})`}
-                      >
-                        {isChecked ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-white animate-in zoom-in-75" />
-                        ) : (
-                          <Circle className="w-3.5 h-3.5 text-slate-300" />
-                        )}
-                        <span>
-                          {slot.icon} {slot.shortLabel}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* 快捷微調庫存面板 */}
-          {showQuickAdjust && (
-            <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-amber-50/90 to-orange-50/70 border-2 border-amber-200 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between text-xs font-bold text-amber-900 mb-2">
-                <span className="flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  微調庫存數量 ({medication.packageSpec.unitName})
-                </span>
-                <button
-                  onClick={() => setShowQuickAdjust(false)}
-                  className="text-[11px] text-amber-700 hover:underline cursor-pointer font-bold"
-                >
-                  收合
-                </button>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => onAdjustStock(medication.id, -1, '手動服用扣減 1 單位')}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-amber-200 text-slate-700 text-xs font-bold hover:bg-rose-50 hover:text-rose-600 cursor-pointer shadow-2xs"
-                >
-                  <Minus className="w-3 h-3 text-rose-500" /> 1 {medication.packageSpec.unitName}
-                </button>
-                <button
-                  onClick={() => onAdjustStock(medication.id, 1, '手動增補 1 單位')}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-amber-200 text-slate-700 text-xs font-bold hover:bg-teal-50 hover:text-teal-700 cursor-pointer shadow-2xs"
-                >
-                  <Plus className="w-3 h-3 text-teal-600" /> 1 {medication.packageSpec.unitName}
-                </button>
-                <button
-                  onClick={() =>
-                    onAdjustStock(
-                      medication.id,
-                      medication.packageSpec.unitsPerPackage,
-                      `補貨 1 ${medication.packageSpec.packageUnitName}`
-                    )
-                  }
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 cursor-pointer shadow-2xs"
-                >
-                  <Plus className="w-3 h-3" /> +1 {medication.packageSpec.packageUnitName} ({medication.packageSpec.unitsPerPackage} {medication.packageSpec.unitName})
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 底部行動條 */}

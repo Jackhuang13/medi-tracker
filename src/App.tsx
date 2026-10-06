@@ -377,6 +377,16 @@ export default function App() {
             {/* 狀態快捷篩選 */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
               <button
+                onClick={() => setStatusFilter('all')}
+                className={`px-3.5 py-1.5 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer active:scale-95 shadow-2xs ${
+                  statusFilter === 'all'
+                    ? 'bg-slate-800 text-white shadow-slate-200'
+                    : 'bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {t('filterAll')} ({medications.length})
+              </button>
+              <button
                 onClick={() => setStatusFilter('active')}
                 className={`px-3.5 py-1.5 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer active:scale-95 shadow-2xs ${
                   statusFilter === 'active'
@@ -395,16 +405,6 @@ export default function App() {
                 }`}
               >
                 {t('filterUpcoming')} ({medications.filter((m) => m.status !== 'archived' && m.startDate && m.startDate > formatDate(selectedDate)).length})
-              </button>
-              <button
-                onClick={() => setStatusFilter('all')}
-                className={`px-3.5 py-1.5 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer active:scale-95 shadow-2xs ${
-                  statusFilter === 'all'
-                    ? 'bg-slate-800 text-white shadow-slate-200'
-                    : 'bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                {t('filterAll')} ({medications.length})
               </button>
               <button
                 onClick={() => setStatusFilter('low_stock')}
@@ -522,7 +522,6 @@ export default function App() {
                 onViewDetail={handleOpenDetail}
                 onToggleCheck={toggleDoseCheck}
                 onBatchCheck={batchCheckDate}
-                onAdjustStock={adjustStock}
               />
             ))}
           </div>
@@ -543,13 +542,14 @@ export default function App() {
         onClose={() => setIsDetailOpen(false)}
         onEdit={handleOpenEdit}
         onDelete={deleteMedication}
-        onAdjustStock={adjustStock}
+        selectedDate={selectedDate}
       />
 
       <RefillScheduleModal
         isOpen={isRefillScheduleOpen}
         onClose={() => setIsRefillScheduleOpen(false)}
         medications={medications}
+        selectedDate={selectedDate}
         onSelectMedication={handleOpenDetail}
         onAdjustStock={adjustStock}
       />

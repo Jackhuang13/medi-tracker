@@ -251,7 +251,7 @@ export function calculateMedicationForecast(
   const baseUnits = calculateBaseUnits(med);
   const totalConsumedUnits = calculateTotalCheckedUnits(med);
 
-  // 1. 現存剩餘量（實際扣除已打卡使用量）
+  // 1. 現存剩餘量（保留相容性）
   const actualUnitsRemaining = Math.max(0, Math.round((baseUnits - totalConsumedUnits) * 10) / 10);
   const formattedActualStock = formatStockDisplay(
     actualUnitsRemaining,
@@ -281,8 +281,17 @@ export function calculateMedicationForecast(
     packageUnitName
   );
 
-  // 3. 差異量 (實際現存量 - 理論應剩餘量)
-  // 核心規則：預算差異應考慮當日用藥 (頻次*單劑量)，若差距在一天用藥 (dailyRate) 範圍內，可視為正常
+  // 3. 手頭持有量 (扣除今日 1 天用藥量) 與今日用藥量
+  const todayDoseUnits = med.frequency === 'PRN' ? 0 : dailyRate;
+  const holdingUnits = Math.max(0, Math.round((theoreticalUnitsRemaining - todayDoseUnits) * 10) / 10);
+  const formattedHoldingStock = formatStockDisplay(
+    holdingUnits,
+    unitsPerPackage,
+    unitName,
+    packageUnitName
+  );
+
+  // 差異量 (保留相容性)
   const varianceUnits = Math.round((actualUnitsRemaining - theoreticalUnitsRemaining) * 10) / 10;
   const isWithinDailyTolerance = dailyRate > 0 ? Math.abs(varianceUnits) <= dailyRate : varianceUnits === 0;
 
@@ -292,22 +301,8 @@ export function calculateMedicationForecast(
   if (isNotStartedYet) {
     varianceText = `預計於 ${med.startDate} 啟用`;
     varianceLevel = 'upcoming';
-  } else if (isWithinDailyTolerance) {
-    // 差距在一天用藥 (頻次 * 單劑量) 範圍內，視為正常
-    if (varianceUnits === 0) {
-      varianceText = '進度完全吻合 (正常)';
-    } else if (varianceUnits > 0) {
-      varianceText = `正常進度 (+${varianceUnits} ${unitName})`;
-    } else {
-      varianceText = `正常進度 (${varianceUnits} ${unitName})`;
-    }
-    varianceLevel = 'normal';
-  } else if (varianceUnits > dailyRate) {
-    varianceText = `多 ${varianceUnits} ${unitName} (少服/漏服)`;
-    varianceLevel = 'excess';
   } else {
-    varianceText = `少 ${Math.abs(varianceUnits)} ${unitName} (超服/提前)`;
-    varianceLevel = 'deficit';
+    varianceText = '預估進度';
   }
 
   // 檢查是否過期
@@ -330,13 +325,16 @@ export function calculateMedicationForecast(
       formattedActualStock,
       theoreticalUnitsRemaining,
       formattedTheoreticalStock,
+      holdingUnits: theoreticalUnitsRemaining,
+      formattedHoldingStock: formattedTheoreticalStock,
+      todayDoseUnits: 0,
       varianceUnits: 0,
       varianceText: isNotStartedYet ? `預計於 ${med.startDate} 啟用` : '需要時使用',
       varianceLevel: isNotStartedYet ? 'upcoming' : 'normal',
       isWithinDailyTolerance: true,
       totalConsumedUnits,
-      totalUnitsRemaining: actualUnitsRemaining,
-      formattedStock: formattedActualStock,
+      totalUnitsRemaining: theoreticalUnitsRemaining,
+      formattedStock: formattedTheoreticalStock,
       dailyConsumptionRate: 0,
       daysRemaining: 9999,
       exhaustionDate: '需要時使用 (無固定消耗日)',
@@ -345,7 +343,7 @@ export function calculateMedicationForecast(
       isWeekend: false,
       isUpcomingWeekendAlert: false,
       isUpcomingCriticalAlert: false,
-      stockWarningLevel: actualUnitsRemaining <= 0 ? 'exhausted' : 'prn',
+      stockWarningLevel: theoreticalUnitsRemaining <= 0 ? 'exhausted' : 'prn',
       isExpiringSoon,
       isExpired,
       isNotStartedYet,
@@ -353,21 +351,24 @@ export function calculateMedicationForecast(
   }
 
   // 已用罄狀態
-  if (actualUnitsRemaining <= 0) {
+  if (theoreticalUnitsRemaining <= 0) {
     const todayStr = formatDate(referenceDate);
     const dayOfWeekIdx = referenceDate.getDay();
     return {
-      actualUnitsRemaining: 0,
+      actualUnitsRemaining,
       formattedActualStock,
       theoreticalUnitsRemaining,
       formattedTheoreticalStock,
+      holdingUnits: 0,
+      formattedHoldingStock: formatStockDisplay(0, unitsPerPackage, unitName, packageUnitName),
+      todayDoseUnits,
       varianceUnits,
       varianceText,
       varianceLevel,
       isWithinDailyTolerance,
       totalConsumedUnits,
       totalUnitsRemaining: 0,
-      formattedStock: formattedActualStock,
+      formattedStock: formattedTheoreticalStock,
       dailyConsumptionRate: dailyRate,
       daysRemaining: 0,
       exhaustionDate: todayStr,
@@ -383,8 +384,8 @@ export function calculateMedicationForecast(
     };
   }
 
-  // 預估剩餘天數 = 目前實際剩餘量 / 每日總量
-  const daysRemaining = Math.floor(actualUnitsRemaining / dailyRate);
+  // 預估剩餘天數 = 目前理論應剩餘量 / 每日總量
+  const daysRemaining = Math.floor(theoreticalUnitsRemaining / dailyRate);
 
   // 推算精確用罄日期 (若尚未開始，從開始日開始推算；若已開始，從基準日推算)
   const calculationBaseDate = isNotStartedYet ? startD : referenceDate;
@@ -403,7 +404,7 @@ export function calculateMedicationForecast(
 
   // 庫存警戒等級
   let stockWarningLevel: 'safe' | 'warning' | 'critical' | 'exhausted' | 'prn' = 'safe';
-  if (actualUnitsRemaining <= 0) {
+  if (theoreticalUnitsRemaining <= 0) {
     stockWarningLevel = 'exhausted';
   } else if (isNotStartedYet) {
     stockWarningLevel = 'safe';
@@ -420,13 +421,16 @@ export function calculateMedicationForecast(
     formattedActualStock,
     theoreticalUnitsRemaining,
     formattedTheoreticalStock,
+    holdingUnits,
+    formattedHoldingStock,
+    todayDoseUnits,
     varianceUnits,
     varianceText,
     varianceLevel,
     isWithinDailyTolerance,
     totalConsumedUnits,
-    totalUnitsRemaining: actualUnitsRemaining,
-    formattedStock: formattedActualStock,
+    totalUnitsRemaining: theoreticalUnitsRemaining,
+    formattedStock: formattedTheoreticalStock,
     dailyConsumptionRate: dailyRate,
     daysRemaining,
     exhaustionDate: exhaustionDateStr,
@@ -459,7 +463,7 @@ export function generateConsumptionTimeline(
 }> {
   const dailyRate = calculateDailyRate(med);
   const forecast = calculateMedicationForecast(med, startDate);
-  const totalUnits = forecast.actualUnitsRemaining;
+  const totalUnits = forecast.theoreticalUnitsRemaining;
   const unitsPerPkg = Math.max(1, Number(med.packageSpec?.unitsPerPackage) || 1);
   const unitName = med.packageSpec?.unitName || '粒';
   const pkgName = med.packageSpec?.packageUnitName || '盒';

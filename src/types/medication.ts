@@ -141,7 +141,17 @@ export interface MedicationForecast {
     totalUnitsString: string;
   };
 
-  // 差異量 (實際現存量 - 理論應剩餘量)
+  // 手頭持有量 (扣除今日用量後) 與今日用量
+  holdingUnits: number;
+  formattedHoldingStock: {
+    packages: number;
+    units: number;
+    displayString: string;
+    totalUnitsString: string;
+  };
+  todayDoseUnits: number;
+
+  // 差異量 (保留相容性)
   varianceUnits: number; // 正數表示多於理論 (漏服/少吃)，負數表示少於理論 (超服/提前用完)，0 表示完全吻合
   varianceText: string;
   varianceLevel: 'normal' | 'excess' | 'deficit' | 'upcoming';

@@ -5,8 +5,6 @@ import {
   AlertTriangle,
   Clock,
   Package,
-  Plus,
-  Minus,
   Edit2,
   Trash2,
   Building2,
@@ -34,7 +32,7 @@ interface MedicationDetailModalProps {
   onClose: () => void;
   onEdit: (med: Medication) => void;
   onDelete: (id: string) => void;
-  onAdjustStock: (id: string, changeUnits: number, reason: string) => void;
+  selectedDate?: Date;
 }
 
 export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
@@ -43,22 +41,15 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
   onClose,
   onEdit,
   onDelete,
-  onAdjustStock,
+  selectedDate = new Date(),
 }) => {
-  const [customReason, setCustomReason] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'history'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'timeline'>('overview');
 
   if (!isOpen || !medication) return null;
 
-  const forecast = calculateMedicationForecast(medication);
-  const timeline = generateConsumptionTimeline(medication, 14);
+  const forecast = calculateMedicationForecast(medication, selectedDate);
+  const timeline = generateConsumptionTimeline(medication, 14, selectedDate);
   const categoryInfo = CATEGORY_LABELS[medication.category] || CATEGORY_LABELS.other;
-
-  const handleAdjust = (changeUnits: number, defaultReason: string) => {
-    const reason = customReason.trim() || defaultReason;
-    onAdjustStock(medication.id, changeUnits, reason);
-    setCustomReason('');
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-sky-950/40 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
@@ -84,7 +75,7 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
                   {categoryInfo.label}
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-700 border border-sky-100">
-                  {ROUTE_LABELS[medication.route]}
+                  {ROUTE_LABELS[medication.route] || '口服'}
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
@@ -111,7 +102,7 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            總覽與庫存管理
+            總覽與用藥計畫
           </button>
           <button
             onClick={() => setActiveTab('timeline')}
@@ -123,53 +114,54 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
           >
             14天消耗預測曲線
           </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`py-3 px-4 text-xs font-black border-b-2 transition cursor-pointer ${
-              activeTab === 'history'
-                ? 'border-sky-500 text-sky-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            盤點與異動紀錄 ({medication.adjustments?.length || 0})
-          </button>
         </div>
 
         {/* 內容區域 */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 text-slate-800">
           {activeTab === 'overview' && (
             <>
-              {/* 核心庫存與預測數據看板 */}
+              {/* 核心預估數據看板 */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* 1. 現存剩餘量 (實際) */}
+                {/* 1. 預估在庫藥量 (含今日) */}
                 <div className="p-4 rounded-3xl bg-gradient-to-br from-sky-50 via-blue-50 to-teal-50 border-2 border-sky-100 flex flex-col justify-between">
                   <div>
                     <div className="text-xs font-black text-sky-900 flex items-center gap-1.5">
                       <Package className="w-4 h-4 text-sky-600" />
-                      現存剩餘量 (實際在手)
+                      預估在庫藥量 (含今日)
                     </div>
                     <div className="mt-2 text-lg sm:text-xl font-black text-sky-950">
-                      {forecast.formattedActualStock.displayString}
+                      {forecast.formattedTheoreticalStock.displayString}
                     </div>
                   </div>
                   <div className="text-[11px] text-sky-700 font-bold mt-1 pt-1 border-t border-sky-200/60">
-                    規格: 1 {medication.packageSpec.packageUnitName} = {medication.packageSpec.unitsPerPackage} {medication.packageSpec.unitName} (實存 {forecast.actualUnitsRemaining} {medication.packageSpec.unitName})
+                    總計: {forecast.theoreticalUnitsRemaining} {medication.packageSpec.unitName} (1 {medication.packageSpec.packageUnitName} = {medication.packageSpec.unitsPerPackage} {medication.packageSpec.unitName})
                   </div>
                 </div>
 
-                {/* 2. 應剩餘用量 (理論預算) */}
+                {/* 2. 手頭持有量 + 今日用量 */}
                 <div className="p-4 rounded-3xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-indigo-100 flex flex-col justify-between">
                   <div>
                     <div className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
                       <Clock className="w-4 h-4 text-indigo-600" />
-                      應剩餘用量 (理論預算)
+                      手頭持有與今日用量
                     </div>
-                    <div className="mt-2 text-lg sm:text-xl font-black text-indigo-950">
-                      {forecast.formattedTheoreticalStock.displayString}
+                    <div className="mt-2 text-base sm:text-lg font-black text-indigo-950 flex flex-wrap items-baseline gap-1">
+                      {forecast.theoreticalUnitsRemaining <= 0 ? (
+                        <span className="text-rose-600 font-black text-xs">已用罄 (0 錠)</span>
+                      ) : (
+                        <>
+                          <span>{forecast.holdingUnits > 0 || medication.frequency === 'PRN' ? forecast.formattedHoldingStock.displayString : ''}</span>
+                          {medication.frequency !== 'PRN' && forecast.todayDoseUnits > 0 && forecast.theoreticalUnitsRemaining >= forecast.todayDoseUnits && (
+                            <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-amber-100 text-amber-900 border border-amber-300">
+                              +{forecast.todayDoseUnits} {medication.packageSpec.unitName} (今日)
+                            </span>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="text-[11px] text-indigo-700 font-bold mt-1 pt-1 border-t border-indigo-200/60">
-                    差異: <span className="font-black">{forecast.varianceText}</span>
+                    扣除今日用量後的實體持有量
                   </div>
                 </div>
 
@@ -201,9 +193,9 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* ⚠️ 即期週末休診預警 (僅在即期 <=14 天且用罄日為週末時顯示) */}
+              {/* ⚠️ 即期週末休診預警 */}
               {forecast.isUpcomingWeekendAlert && (
-                <div className="p-4 rounded-3xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 text-amber-900 space-y-1 shadow-sm animate-in fade-in">
+                <div className="p-4 rounded-3xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 text-amber-900 space-y-1 shadow-sm">
                   <div className="flex items-center gap-2 font-black text-sm text-amber-950">
                     <Star className="w-4 h-4 text-amber-500 fill-amber-400 animate-twinkle" />
                     <span>即期週末休診預警（預估 {forecast.daysRemaining} 天後【{forecast.dayOfWeekName}】餘藥用罄）</span>
@@ -297,63 +289,6 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
                   </div>
                 )}
               </div>
-
-              {/* 手動微調庫存控制台 */}
-              <div className="p-4 rounded-3xl bg-gradient-to-br from-amber-50/80 to-orange-50/50 border-2 border-amber-200 space-y-3">
-                <h4 className="text-xs font-black text-amber-950 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  盤點校正 / 快速微調庫存
-                </h4>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <button
-                    onClick={() => handleAdjust(1, '手動補入 1 單量')}
-                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-2xl bg-white border-2 border-amber-200 text-amber-900 text-xs font-black hover:bg-amber-50 cursor-pointer shadow-2xs active:scale-95"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-teal-600" /> 1 {medication.packageSpec.unitName}
-                  </button>
-                  <button
-                    onClick={() => handleAdjust(-1, '手動服用扣減 1 單量')}
-                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-2xl bg-white border-2 border-amber-200 text-slate-700 text-xs font-black hover:bg-rose-50 hover:text-rose-600 cursor-pointer shadow-2xs active:scale-95"
-                  >
-                    <Minus className="w-3.5 h-3.5 text-rose-500" /> 1 {medication.packageSpec.unitName}
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleAdjust(
-                        medication.packageSpec.unitsPerPackage,
-                        `補貨 1 ${medication.packageSpec.packageUnitName}`
-                      )
-                    }
-                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black hover:from-amber-600 hover:to-orange-600 cursor-pointer shadow-sm active:scale-95"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> 1 {medication.packageSpec.packageUnitName} (+
-                    {medication.packageSpec.unitsPerPackage})
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleAdjust(
-                        -medication.packageSpec.unitsPerPackage,
-                        `扣除 1 ${medication.packageSpec.packageUnitName}`
-                      )
-                    }
-                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-2xl bg-white border-2 border-rose-200 text-rose-700 text-xs font-black hover:bg-rose-50 cursor-pointer shadow-2xs active:scale-95"
-                  >
-                    <Minus className="w-3.5 h-3.5" /> 1 {medication.packageSpec.packageUnitName} (-
-                    {medication.packageSpec.unitsPerPackage})
-                  </button>
-                </div>
-
-                <div className="pt-1">
-                  <input
-                    type="text"
-                    value={customReason}
-                    onChange={(e) => setCustomReason(e.target.value)}
-                    placeholder="輸入微調原因 (選填，如：慢箋第 2 次領藥、遺失補扣)"
-                    className="w-full px-3.5 py-2 rounded-2xl border-2 border-amber-200 bg-white text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold"
-                  />
-                </div>
-              </div>
             </>
           )}
 
@@ -400,44 +335,6 @@ export const MedicationDetailModal: React.FC<MedicationDetailModalProps> = ({
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {activeTab === 'history' && (
-            <div className="space-y-3">
-              <div className="text-xs font-bold text-slate-700">
-                庫存增減與盤點歷史日誌：
-              </div>
-
-              {(!medication.adjustments || medication.adjustments.length === 0) ? (
-                <div className="p-8 text-center text-xs font-bold text-slate-400 bg-sky-50/40 rounded-3xl border-2 border-sky-100">
-                  尚無手動微調紀錄
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {medication.adjustments.map((adj) => (
-                    <div
-                      key={adj.id}
-                      className="p-3.5 rounded-2xl bg-sky-50/40 border-2 border-sky-100 flex items-center justify-between text-xs"
-                    >
-                      <div>
-                        <div className="font-black text-slate-800">{adj.reason}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 font-bold">
-                          {new Date(adj.timestamp).toLocaleString('zh-TW')}
-                        </div>
-                      </div>
-                      <div
-                        className={`font-black text-sm ${
-                          adj.changeAmount > 0 ? 'text-teal-600' : 'text-rose-600'
-                        }`}
-                      >
-                        {adj.changeAmount > 0 ? `+${adj.changeAmount}` : adj.changeAmount}{' '}
-                        {medication.packageSpec.unitName}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
         </div>

@@ -17,6 +17,7 @@ interface RefillScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
   medications: Medication[];
+  selectedDate: Date;
   onSelectMedication: (med: Medication) => void;
   onAdjustStock: (id: string, changeUnits: number, reason: string) => void;
 }
@@ -25,6 +26,7 @@ export const RefillScheduleModal: React.FC<RefillScheduleModalProps> = ({
   isOpen,
   onClose,
   medications,
+  selectedDate,
   onSelectMedication,
   onAdjustStock,
 }) => {
@@ -34,7 +36,7 @@ export const RefillScheduleModal: React.FC<RefillScheduleModalProps> = ({
   const warningList = medications
     .filter((m) => m.status !== 'archived')
     .map((med) => {
-      const forecast = calculateMedicationForecast(med);
+      const forecast = calculateMedicationForecast(med, selectedDate);
       return { med, forecast };
     })
     .filter(
